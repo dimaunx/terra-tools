@@ -1,0 +1,23 @@
+# Vim
+.*.sw?
+
+# Ansible
+*.retry
+
+# Credentials
+clouds.yml
+
+# Tox
+.tox/
+
+*idea*
+
+# Secrets for RDO Cloud, personal instance of rdo_vm.example
+ansible/group_vars/rdo-vm
+
+# Credentials for deployed kubernetes/openshifts
+creds/*
+
+# Inventories and details
+ansible/inventory/.ssh_key_name
+ansible/inventory/*-inventory
