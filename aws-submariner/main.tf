@@ -6,66 +6,61 @@
 //  }
 //}
 
-provider "aws" {
-  region = "us-east-1"
-}
-
 locals {
-  aws_key_name       = "mcn"
-  local_key_name     = "mcn-aws.pem"
-  allowed_ips        = ["1.1.1.1"]
-  availability_zones = ["us-east-1a", "us-east-1b", "us-east-1c"]
-  user_id            = "xxx"
+  allowed_ips            = ["0.0.0.0/32"]
+  user_id                = "someuser"
+  local_private_key_path = "~/.ssh/id_rsa"
+  local_public_key_path  = "~/.ssh/id_rsa.pub"
 }
 
 module "aws-cluster1" {
-  source               = "k8s-cluster"
+  source               = "./k8s-cluster"
+  aws_region           = "us-east-1"
+  ssh_public_key_path  = local.local_public_key_path
+  ssh_private_key_path = local.local_private_key_path
   base_name            = "${local.user_id}-cl1"
   cluster_name         = "cl1"
   env_vpc_index        = "10.164"
-  subnet_az_list       = local.availability_zones
-  aws_key_name         = local.aws_key_name
-  local_key_name       = local.local_key_name
   master_instance_type = "t2.medium"
   worker_instance_type = "t2.medium"
   number_workers_nodes = 2
   service_cidr         = "100.94.0.0/16"
   pod_cidr             = "10.244.0.0/14"
-  kube_version         = "1.17.0"
+  kube_version         = "1.16.6"
   allowed_ips          = local.allowed_ips
 }
 
 module "aws-cluster2" {
-  source               = "k8s-cluster"
+  source               = "./k8s-cluster"
+  aws_region           = "us-west-1"
+  ssh_public_key_path  = local.local_public_key_path
+  ssh_private_key_path = local.local_private_key_path
   base_name            = "${local.user_id}-cl2"
   cluster_name         = "cl2"
   env_vpc_index        = "10.165"
-  subnet_az_list       = local.availability_zones
-  aws_key_name         = local.aws_key_name
-  local_key_name       = local.local_key_name
   master_instance_type = "t2.medium"
   worker_instance_type = "t2.medium"
   number_workers_nodes = 2
   service_cidr         = "100.95.0.0/16"
   pod_cidr             = "10.248.0.0/14"
-  kube_version         = "1.17.0"
+  kube_version         = "1.16.6"
   allowed_ips          = local.allowed_ips
 }
 
 module "aws-cluster3" {
-  source               = "k8s-cluster"
+  source               = "./k8s-cluster"
+  aws_region           = "us-west-2"
+  ssh_public_key_path  = local.local_public_key_path
+  ssh_private_key_path = local.local_private_key_path
   base_name            = "${local.user_id}-cl3"
   cluster_name         = "cl3"
   env_vpc_index        = "10.166"
-  subnet_az_list       = local.availability_zones
-  aws_key_name         = local.aws_key_name
-  local_key_name       = local.local_key_name
   master_instance_type = "t2.medium"
   worker_instance_type = "t2.medium"
   number_workers_nodes = 2
   service_cidr         = "100.96.0.0/16"
   pod_cidr             = "10.252.0.0/14"
-  kube_version         = "1.17.0"
+  kube_version         = "1.16.6"
   allowed_ips          = local.allowed_ips
 }
 

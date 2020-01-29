@@ -30,7 +30,7 @@ resource "null_resource" "run_ansible_kube_cluster" {
   provisioner "local-exec" {
     command = <<EOT
         ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook ./ansible/site.yml \
-        -u ${var.aws_ssh_user} --private-key ~/.ssh/${var.local_key_name} \
+        -u ${var.aws_ssh_user} --private-key ${var.ssh_private_key_path} \
         -i ./ansible/tmp/inventory-${var.cluster_name}.yml \
         --extra-vars "aws_ssh_user=${var.aws_ssh_user} pod_cidr=${var.pod_cidr} service_cidr=${var.service_cidr} \
          join_token=${data.template_file.kubeadm_token.rendered} cluster_name=${var.cluster_name} \

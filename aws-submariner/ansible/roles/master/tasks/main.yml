@@ -219,6 +219,10 @@
     dest: ./tmp/{{ cluster_name }}-conf
     flat: yes
 
+- name: Modify kubeconfig {{ cluster_name }} context
+  command: 'sed -i -- "s/current-context: kubernetes-admin.*/current-context: {{ cluster_name }}/g" ./tmp/{{ cluster_name }}-conf'
+  delegate_to: 127.0.0.1
+
 - name: Modify kubeconfig {{ cluster_name }} user
   command: 'sed -i -- "s/user: kubernetes-admin/user: {{ cluster_name }}/g" ./tmp/{{ cluster_name }}-conf'
   delegate_to: 127.0.0.1

@@ -314,6 +314,19 @@ resource "aws_iam_role_policy" "node_policy" {
         "waf:GetWebACL"
       ],
       "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetObject",
+        "s3:DeleteObject",
+        "s3:PutObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::${aws_s3_bucket.thanos_store_bucket.id}/*",
+        "arn:aws:s3:::${aws_s3_bucket.thanos_store_bucket.id}"
+      ]
     }
   ]
 }

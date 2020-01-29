@@ -1,10 +1,17 @@
-variable "env_vpc_index" {
-  description = "VPC CIDR."
+variable "aws_region" {
+  description = "aws region name"
 }
 
-variable "subnet_az_list" {
-  description = "List of AZ's for subnets."
-  type        = "list"
+variable "ssh_public_key_path" {
+  description = "ssh public key for aws key creation"
+}
+
+variable "ssh_private_key_path" {
+  description = "ssh private path key for ssh connection to the instances"
+}
+
+variable "env_vpc_index" {
+  description = "VPC CIDR."
 }
 
 variable "base_name" {
@@ -13,14 +20,6 @@ variable "base_name" {
 
 variable "cluster_name" {
   description = "K8S cluster name"
-}
-
-variable "aws_key_name" {
-  description = "aws pem key name."
-}
-
-variable "local_key_name" {
-  description = "local pem key name."
 }
 
 variable "number_workers_nodes" {
@@ -50,7 +49,7 @@ variable "aws_ssh_user" {
 
 variable "kube_version" {
   description = "Kubernetes version."
-  default     = "v1.14.6"
+  default     = "v1.17.0"
 }
 
 variable "master_bind_port" {

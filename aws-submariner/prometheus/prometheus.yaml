@@ -1,0 +1,184 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: prometheus
+  replicas: 1
+  serviceName: prometheus-service
+  template:
+    metadata:
+      labels:
+        app: prometheus
+        thanos-store-api: "true"
+    spec:
+      serviceAccountName: monitoring
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.15.2
+          args:
+            - "--config.file=/etc/prometheus-shared/prometheus.yaml"
+            - "--storage.tsdb.path=/prometheus/"
+            - "--web.enable-lifecycle"
+            - "--storage.tsdb.no-lockfile"
+            - "--storage.tsdb.min-block-duration=2h"
+            - "--storage.tsdb.max-block-duration=2h"
+          ports:
+            - name: prometheus
+              containerPort: 9090
+          volumeMounts:
+            - name: prometheus-storage
+              mountPath: /prometheus/
+            - name: prometheus-config-shared
+              mountPath: /etc/prometheus-shared/
+            - name: prometheus-rules
+              mountPath: /etc/prometheus/rules
+        - name: thanos
+          image: quay.io/thanos/thanos:v0.10.0
+          args:
+            - "sidecar"
+            - "--log.level=debug"
+            - "--tsdb.path=/prometheus"
+            - "--prometheus.url=http://127.0.0.1:9090"
+            - "--objstore.config={type: S3, config: {bucket: dgroisma-cl1-us-east-1-prom, endpoint: s3.us-east-1.amazonaws.com}}"
+            - "--reloader.config-file=/etc/prometheus/prometheus.yaml.tmpl"
+            - "--reloader.config-envsubst-file=/etc/prometheus-shared/prometheus.yaml"
+            - "--reloader.rule-dir=/etc/prometheus/rules/"
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - name: http-sidecar
+              containerPort: 10902
+            - name: grpc
+              containerPort: 10901
+          livenessProbe:
+            httpGet:
+              port: 10902
+              path: /-/healthy
+          readinessProbe:
+            httpGet:
+              port: 10902
+              path: /-/ready
+          volumeMounts:
+            - name: prometheus-storage
+              mountPath: /prometheus
+            - name: prometheus-config-shared
+              mountPath: /etc/prometheus-shared/
+            - name: prometheus-config
+              mountPath: /etc/prometheus
+            - name: prometheus-rules
+              mountPath: /etc/prometheus/rules
+      securityContext:
+        fsGroup: 2000
+        runAsNonRoot: true
+        runAsUser: 1000
+      volumes:
+        - name: prometheus-config
+          configMap:
+            defaultMode: 420
+            name: prometheus-server-conf
+        - name: prometheus-config-shared
+          emptyDir: {}
+        - name: prometheus-rules
+          configMap:
+            name: prometheus-rules
+  volumeClaimTemplates:
+    - metadata:
+        name: prometheus-storage
+        namespace: monitoring
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: gp2
+        resources:
+          requests:
+            storage: 20Gi
+---
+#This service creates an internal service for querier to find about sidecars store-api's
+apiVersion: v1
+kind: Service
+metadata:
+  name: thanos-sidecar-svc
+  namespace: monitoring
+spec:
+  type: ClusterIP
+  ports:
+    - name: grpc
+      port: 10901
+      targetPort: grpc
+  selector:
+    app: prometheus
+---
+#This service creates an internal service for access prometheus web io
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-svc
+  namespace: monitoring
+  labels:
+    app: prometheus
+spec:
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 9090
+      targetPort: prometheus
+  selector:
+    app: prometheus
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: thanos-sidecar-ing
+  namespace: monitoring
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+    nginx.ingress.kubernetes.io/server-snippet: |
+      server_tokens "off";
+spec:
+  tls:
+    - hosts:
+        - sidecar-us-east-1.devshell.sh
+      secretName: sidecar-tls
+  rules:
+    - host: sidecar-us-east-1.devshell.sh
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: thanos-sidecar-svc
+              servicePort: grpc
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: prometheus-ing
+  namespace: monitoring
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/server-snippet: |
+      server_tokens "off";
+spec:
+  tls:
+    - hosts:
+        - prom-us-east-1.devshell.sh
+      secretName: prom-tls
+  rules:
+    - host: prom-us-east-1.devshell.sh
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: prometheus-svc
+              servicePort: 9090

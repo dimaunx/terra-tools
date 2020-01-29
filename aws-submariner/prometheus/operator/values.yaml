@@ -1,0 +1,16 @@
+prometheus:
+  prometheusSpec:
+    replicas: 1      # work in High-Availability mode
+    retention: 2h   # we only need a few hours of retenion, since the rest is uploaded to blob
+    image:
+      tag: v2.15.2    # use a specific version of Prometheus
+    externalLabels:  # a cool way to add default labels to all metrics
+      geo: us
+      region: us-west-2
+    serviceMonitorNamespaceSelector:  # allows the operator to find target config from multiple namespaces
+      any: true
+    thanos:         # add Thanos Sidecar
+      tag: v0.10.0   # a specific version of Thanos
+      objectStorageConfig: # blob storage configuration to upload metrics
+        key: thanos.yaml
+        name: thanos-objstore-config

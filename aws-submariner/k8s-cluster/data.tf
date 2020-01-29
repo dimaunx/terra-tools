@@ -1,5 +1,9 @@
 data "aws_region" "current" {}
 
+data "aws_availability_zones" "region_az_list" {
+  state = "available"
+}
+
 data "aws_ami" "centos_ami_latest" {
   most_recent = true
 
@@ -23,7 +27,7 @@ data "aws_instances" "gateway_nodes" {
 
   filter {
     name   = "availability-zone"
-    values = ["${var.subnet_az_list[0]}"]
+    values = [data.aws_availability_zones.region_az_list.names[0]]
   }
 
   filter {

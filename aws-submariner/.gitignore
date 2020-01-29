@@ -3,5 +3,6 @@
 *.pyc
 __pycache__
 *.terraform*
-ansible/tmp/.gitkeep
+ansible/tmp/*
 *tfstate*
+*.idea*

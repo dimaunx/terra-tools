@@ -1,4 +1,4 @@
-data "template_file" "ecs_user_data" {
+data "template_file" "user_data" {
   template = file("${path.module}/templates/user-data.sh")
 }
 
@@ -21,6 +21,11 @@ locals {
   node_tag_values      = ["owned", "${var.base_name}-node", "GatewayNode"]
   master_tag_values    = ["owned", "${var.base_name}-master", "Broker"]
   subnet_tag_values    = ["owned", "1", "1", "1", "${var.base_name}-subnet"]
+}
+
+resource "aws_key_pair" "key_pair" {
+  public_key      = file(var.ssh_public_key_path)
+  key_name_prefix = "${var.base_name}-"
 }
 
 resource "aws_security_group" "master_sg" {
@@ -114,7 +119,7 @@ resource "aws_instance" "k8s_master_node" {
   monitoring                  = false
   ebs_optimized               = false
   iam_instance_profile        = aws_iam_instance_profile.master_instance_profile.id
-  key_name                    = var.aws_key_name
+  key_name                    = aws_key_pair.key_pair.id
   associate_public_ip_address = true
 
   root_block_device {
@@ -135,8 +140,8 @@ resource "aws_instance" "k8s_node" {
   monitoring                  = false
   ebs_optimized               = false
   iam_instance_profile        = aws_iam_instance_profile.node_instance_profile.id
-  key_name                    = var.aws_key_name
-  user_data                   = data.template_file.ecs_user_data.rendered
+  key_name                    = aws_key_pair.key_pair.id
+  user_data                   = data.template_file.user_data.rendered
   associate_public_ip_address = true
   source_dest_check           = false
 
